@@ -1,0 +1,2016 @@
+---
+title: "Effect of Covid on the Price of several Species"
+author: ""
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(mgcv)
+```
+```{r,warning=FALSE,message=FALSE}
+library(MASS) 
+library(carData)
+library(car) 
+library(fitdistrplus)
+library(goft)
+```
+
+# Read data
+
+First Mediterranean data:
+
+```{r,warning=FALSE}
+
+library(dplyr)
+data_M<- read.csv("MED_2017-21.csv",sep=";",dec=",")
+head(data_M)
+data_M=subset(data_M,data_M$Covid!="After state of alarm 2")
+data_M$euros=data_M$euros/data_M$kgs
+e=data_M%>%
+     group_by(specie) %>%
+     summarise(Mean = mean(euros, na.rm = TRUE))
+e$Mean=round(e$Mean,1);e
+e=e[c(11,14,13,17,22,27,28,19,25,18),]
+l=data_M %>%
+     group_by(specie) %>%
+     summarise(Mean = mean(kgs, na.rm = TRUE))
+l$Mean=round(l$Mean);l
+l=l[c(11,14,13,17,22,27,28,19,25,18),]
+```
+
+Second Golf of Cádiz data:
+
+```{r}
+data_A<- read.csv("ATL_2017-21.csv",sep=";",dec=",")
+head(data_A)
+data_A=subset(data_A,data_A$Covid!="After state of alarm 2")
+data_A$euros=data_A$euros/data_A$kgs
+e=data_A%>%
+     group_by(specie) %>%
+     summarise(Mean = mean(euros, na.rm = TRUE))
+e$Mean=round(e$Mean,1);e
+e=e[c(11,14,13,16,21,26,27,18,24,17),]
+l=data_A %>%
+     group_by(specie) %>%
+     summarise(Mean = mean(kgs, na.rm = TRUE))
+l$Mean=round(l$Mean);l
+l=l[c(11,14,13,16,21,26,27,18,24,17),]
+```
+
+# Golf of Cádiz
+
+## Trachurus mediterraneus
+
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="HMM-JUREL BLANCO")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "NO")
+z=data1$kgs
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+## Trachurus picturatus
+
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="JAA-JUREL NEGRO")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "NO")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+## Trachurus trachurus
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="HOM-JUREL")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "NO")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+## Scomber scombrus
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="MAC-CABALLA")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "NO")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+
+## Sardina pilchardus
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="PIL-SARDINA")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "NO")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+## Scomber colias
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="VMA-CABALLA DEL SUR O TONINO")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "NO")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+
+
+## Micromesistius poutassou
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="WHB-BACALADILLA")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "NO")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+## Argyrosomus regius
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="MGR-CORVINA")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "NO")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+
+## Pagellus bogaraveo
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="SBR-BESUGO DE LA PINTA O VORAZ")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "NO")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+
+
+
+
+
+
+## Scomber japonicus
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="MAS-CABALLA DEL SUR O TONINO")
+head(data1)
+```
+
+
+
+# Mediterranean
+
+## Trachurus mediterraneus
+
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="HMM-JUREL BLANCO")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "No ")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+## Trachurus picturatus
+
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="JAA-JUREL NEGRO")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "No ")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+## Trachurus trachurus
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="HOM-JUREL")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "No ")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+## Scomber scombrus
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="MAC-CABALLA")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "No ")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+
+## Sardina pilchardus
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="PIL-SARDINA")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+ind=which(data1$euros==0)
+data1=data1[-ind,]
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "No ")
+z=data1$kgs
+
+ind=which(y==0)
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+## Scomber colias
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="VMA-CABALLA DEL SUR O TONINO")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+ind=which(data1$euros==0)
+if(length(ind)>0){
+data1=data1[-ind,]}
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "No ")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+
+
+## Micromesistius poutassou
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="WHB-BACALADILLA")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "No ")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+## Argyrosomus regius
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="MGR-CORVINA")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "No ")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+
+## Pagellus bogaraveo
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="SBR-BESUGO DE LA PINTA O VORAZ")
+```
+
+### Exploratory analysis
+
+#### Price by covid category (boxplot)
+
+```{r}
+boxplot(data1$euros~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+```
+
+### Abundance  by covid category (boxplot)
+
+```{r}
+boxplot(data1$kgs~data1$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+```
+
+
+#### Price vs Abundance (scatter plot)
+
+```{r}
+plot(data1$kgs,data1$euros,
+     pch = 19,
+     col = factor(data1$Covid),xlab="Abundance",ylab = "Price")
+
+# Legend
+legend("topleft",
+       legend = levels(factor(data1$Covid)),
+       pch = 19,
+       col = factor(levels(factor(data1$Covid))))
+
+cor.test(data1$kgs,data1$euros)
+
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+### Regression model
+
+```{r}
+
+x=as.factor(data1$Covid)
+table(x)
+y=as.numeric(data1$euros)
+x=relevel(x, ref = "No ")
+z=data1$kgs
+
+
+Model<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model)
+
+Model.aux<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model.aux)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+Model.aux<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model.aux)
+```
+
+
+
+## Scomber japonicus
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="MAS-CABALLA DEL SUR O TONINO")
+head(data1)
+```

@@ -1,0 +1,4886 @@
+---
+title: "Effect of Covid on the Price of several Species"
+author: ""
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(mgcv)
+```
+```{r,warning=FALSE,message=FALSE}
+library(MASS) 
+library(carData)
+library(car) 
+library(fitdistrplus)
+library(goft)
+```
+
+# Read data
+
+First Mediterranean data:
+
+```{r,warning=FALSE}
+data_M<- read.csv("MED_2017-21.csv",sep=";",dec=",")
+head(data_M)
+library(dplyr)
+data_M$euros=data_M$euros/data_M$kgs
+e=data_M %>%
+     group_by(specie) %>%
+     summarise(Mean = mean(euros, na.rm = TRUE))
+e$Mean=round(e$Mean,1);e
+e=e[c(21,1,6,7,8,9,10,4,16,20,23,26,12,5,2,24,3),]
+l=data_M %>%
+     group_by(specie) %>%
+     summarise(Mean = mean(kgs, na.rm = TRUE))
+l$Mean=round(l$Mean,1);l
+l=l[c(21,1,6,7,8,9,10,4,16,20,23,26,12,5,2,24,3),]
+```
+
+Second Golf of Cádiz data:
+
+```{r}
+data_A<- read.csv("ATL_2017-21.csv",sep=";",dec=",")
+head(data_A)
+data_A$euros=data_A$euros/data_A$kgs
+e=data_A%>%
+     group_by(specie) %>%
+     summarise(Mean = mean(euros, na.rm = TRUE))
+e$Mean=round(e$Mean,1);e
+e=e[c(20,1,6,7,8,9,10,4,15,19,22,25,12,5,2,23,3),]
+l=data_A %>%
+     group_by(specie) %>%
+     summarise(Mean = mean(kgs, na.rm = TRUE))
+l$Mean=round(l$Mean);l
+l=l[c(20,1,6,7,8,9,10,4,15,19,22,25,12,5,2,23,3),]
+```
+
+# Golf of Cádiz
+
+##  Octopus vulgaris
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="OCC-PULPO DE ROCA O PULPO ROQUERO")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+
+
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+##  Engraulis encrasicolus
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="ANE-BOQUERON")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+##  Sarda sarda     
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="BON-BONITO O BONITO DEL SUR")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+##  Dicologlossa cuneata   
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="CET-ACEDIA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+##  Parapenaeus longirostris   
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="DPS-GAMBA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+##  Phycis phycis
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="FOR-BROTOLA DE ROCA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+##  Auxis thazard
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="FRZ-MELVAS")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+##  Euthynnus alletteratus 
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="LTA-BACORETA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+##  Nephrops norvegicus
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="NEP-CIGALA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+##  Scorpaena scrofa
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="RSE-CABRACHO" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+##  Xiphias gladius
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="SWO-PEZ ESPADA O EMPERADOR" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+
+## Caranx rhonchus
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="HMY-JURELA O JUREL DORADO" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+
+
+## Boops boops
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="BOG-BOGA" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+
+
+## Aristeus antennatus
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="ARA-GAMBA ROJA O RAYADO" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+## Sardinella aurita
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="SAA-ALACHA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r,eval=FALSE}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+
+## Thunnus thynnus
+
+```{r}
+
+data1=subset(data_A,data_A$specie=="BFT-ATUN ROJO" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))[!is.na(as.numeric(names(influential)))]
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))[!is.na(as.numeric(names(influential)))]
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+
+## Auxis rochei
+```{r}
+
+data1=subset(data_A,data_A$specie=="BLT-MELVA" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+# Mediterranean
+
+##  Octopus vulgaris
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="OCC-PULPO DE ROCA O PULPO ROQUERO")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+##  Engraulis encrasicolus
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="ANE-BOQUERON")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+ind=which(data1$euros==0)
+if(length(ind)>0){data1=data1[-ind,]}
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+##  Sarda sarda   
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="BON-BONITO O BONITO DEL SUR")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+##  Dicologlossa cuneata 
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="CET-ACEDIA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+ind=which(data1$euros==0)
+if(length(ind)>0){data1=data1[-ind,]}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+##  Parapenaeus longirostris   
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="DPS-GAMBA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+##  Phycis phycis
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="FOR-BROTOLA DE ROCA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+##  Auxis thazard
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="FRZ-MELVAS")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+##  Euthynnus alletteratus 
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="LTA-BACORETA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+##  Nephrops norvegicus
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="NEP-CIGALA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+##  Scorpaena scrofa
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="RSE-CABRACHO" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+##  Xiphias gladius
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="SWO-PEZ ESPADA O EMPERADOR" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+
+## Caranx rhonchus
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="HMY-JURELA O JUREL DORADO" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+
+
+## Boops boops
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="BOG-BOGA" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+ind=which(data1$euros==0)
+if(length(ind)>0){data1=data1[-ind,]}
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+
+
+## Aristeus antennatus
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="ARA-GAMBA ROJA O RAYADO" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+## Sardinella aurita
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="SAA-ALACHA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+
+## Thunnus thynnus
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="BFT-ATUN ROJO" )
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+## Auxis rochei 
+
+```{r}
+
+data1=subset(data_M,data_M$specie=="BLT-MELVA")
+```
+
+Is gamma a correct distribution for the response variable PRICE?
+
+
+```{r,warning=FALSE}
+summary(data1$euros)
+a=fitdist(data1$euros, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$euros), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$euros)
+```
+
+
+Is gamma a correct distribution for the response variable ABUNDANCE?
+
+
+```{r,warning=FALSE}
+summary(data1$kgs)
+a=fitdist(data1$kgs, distr = "gamma",start=list(shape = 1, rate = 2), lower = -1,method = "mme")
+plot(a)
+```
+
+```{r,warning=FALSE}
+ks.test(na.omit(data1$kgs), "pgamma", a$estimate[1],a$estimate[2])
+```
+
+```{r}
+gamma_test(data1$kgs)
+```
+
+
+Regression models
+
+```{r}
+
+
+x=as.factor(data1$Covid)
+levels(x)
+
+
+data0=subset(data1,data1$Covid=="Reference state of alarm 1" | data1$Covid=="state of alarm 1")
+boxplot(data0$euros~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data0$kgs~data0$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data0$Covid)
+table(x)
+y=as.numeric(data0$euros)
+x=relevel(x, ref = "Reference state of alarm 1")
+z=as.numeric(data0$kgs)
+
+Model0<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))[!is.na(as.numeric(names(influential)))]
+y=y[-influential]
+xaux=x[-influential]
+Model0<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model0)
+
+Model0<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model0)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))[!is.na(as.numeric(names(influential)))]
+z=z[-influential]
+xaux=x[-influential]
+
+if(length(z)>0){
+Model0<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model0)}
+
+data01=subset(data1,data1$Covid=="Reference state of alarm 2" | data1$Covid=="state of alarm 2")
+boxplot(data01$euros~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data01$kgs~data01$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data01$Covid)
+table(x)
+y=as.numeric(data01$euros)
+x=relevel(x, ref = "Reference state of alarm 2")
+z=as.numeric(data01$kgs)
+
+
+Model01<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model01<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+Model01<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model01)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model01<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model01)
+
+
+data02=subset(data1,data1$Covid=="Reference after state of alarm" | data1$Covid=="after state of alarm")
+boxplot(data02$euros~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Price")
+boxplot(data02$kgs~data02$Covid, col = rgb(0, 0.5, 1, alpha = 0.5),xlab="Covid Category",ylab="Abundance")
+x=as.factor(data02$Covid)
+table(x)
+y=as.numeric(data02$euros)
+x=relevel(x, ref = "Reference after state of alarm")
+z=as.numeric(data02$kgs)
+
+Model02<-glm((y)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+y=y[-influential]
+xaux=x[-influential]
+Model02<-glm((y)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+Model02<-glm((z)~x,family=Gamma(link=log))
+cooksd <- cooks.distance(Model02)
+influential <- cooksd[(cooksd > (3 * mean(cooksd, na.rm = TRUE)))]
+influential=as.numeric(names(influential))
+z=z[-influential]
+xaux=x[-influential]
+
+Model02<-glm((z)~xaux,family=Gamma(link=log))
+summary(Model02)
+
+```
+
+
+
+
